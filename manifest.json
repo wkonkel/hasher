@@ -1,0 +1,9 @@
+{
+  "javascripts": [
+    "javascripts/hashtag.js",
+    "javascripts/observer.js",
+    "javascripts/router.js",
+    "javascripts/view.js",
+    "javascripts/local.js"
+  ]
+}
