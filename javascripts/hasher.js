@@ -1,6 +1,6 @@
 /**********************************************************************************
  *                                                                                *
- *  Hasher.js - 0.0.2 - A client-side view-controller framework for JavaScript.   *
+ *  Hasher.js - 0.0.3 - A client-side view-controller framework for JavaScript.   *
  *                                                                                *
  *  Copyright (C) 2011 by Warren Konkel                                           *
  *                                                                                *
@@ -28,12 +28,11 @@
 // TODO:
 //   - figure out better way of communicating errors other than alert()
 //   - browser quirks (tbody for table(), colSpan/cellSpacing/frameBorder case sensitivity, etc)
-//   - don't require explicit render() in actions (i.e. performed_action stuff)
 //   - replace controller_parent_chain (i.e. get_recursive_property('before_filters', ['default']), auto merge hashes/arrays, etc)
 //   - arguments to_array'ing is gheto (search: _arguments)
 //   - figure out a nice way of passing event object into action() for mouse/keyboard/etc events
-//   - render default view if !performed_action... determining scope is a little tricky
 //   - skip_before_filter
+//   - allow no layout
 //   - new variable scope can pollute window[] (see spinner_row() in webforward and menu/item in application)
 //   - eliminate need for "return" in create_view (first dom element creation call automatically sets itself to the return value for create_view)
 
@@ -44,91 +43,91 @@ var Hasher = {
       parent: parent,
       layout: null,
       before_filters: [],
-      actions: {}
+      actions: {},
+      scope: {
+        initializer: function(callback) {
+          Hasher.Internal.initializers.push(callback);
+        },
+
+        before_filter: function(filter_name, callback) {
+          Hasher.Internal.controllers[namespace].before_filters.push({ name: filter_name, callback: callback });
+        },
+
+        layout: function(layout_name) {
+          Hasher.Internal.controllers[namespace].layout = 'Layout.' + layout_name;
+        },
+
+        create_action: function(action_name, callback) {
+          Hasher.Internal.controllers[namespace].actions[action_name] = function(e) {
+            var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
+            if (e && (typeof e.cancelBubble != 'undefined')) {
+              arguments = arguments.slice(1);
+              e.cancelBubble = true;
+              e.returnValue = false;
+            }
+            callback.apply(null, arguments);
+          };
+        },
+
+        route: function(routes) {
+          for (var route in routes) {
+            Hasher.Internal.routes.push({ 
+              regex: (new RegExp("^" + route.replace(/:[a-z_]+/g, '([^/]+)') + '$')),
+              callback: routes[route],
+              default_view: namespace + '.' + routes[route],
+              namespace: namespace
+            });
+          }
+        },
+
+        redirect_to: function(url) {
+          Hasher.Internal.performed_action = true;
+          Hasher.Routes.setHash(url);
+        },
+
+        render: function() {
+          var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
+
+          Hasher.Internal.performed_action = true;
+
+          var view = arguments[0];
+          if (view.indexOf('.') == -1) view = namespace + '.' + view;
+          if (!Hasher.Internal.views[view]) {
+            alert('View not found: ' + view);
+            return;
+          }
+
+          var parent_chain = Hasher.InternalHelpers.controller_parent_chain(namespace);
+          var layout = null;
+          for (var i=0; i < parent_chain.length; i++) {
+            if (parent_chain[i].layout) layout = parent_chain[i].layout;
+          }
+
+          if (layout && !Hasher.Internal.views[layout]) {
+            alert('Layout not found: ' + layout);
+            return;
+          }
+
+          if (typeof(view) != 'string') {
+            if (view.layout) layout = view.layout;
+            view = view.view;
+          }
+
+          if (!Hasher.Internal.compiled_layouts[layout]) {
+            Hasher.Internal.compiled_layouts[layout] = {};
+            Hasher.Internal.compiled_layouts[layout].content_div = document.createElement('div');
+            Hasher.Internal.compiled_layouts[layout].root_element = Hasher.Internal.views[layout].call(null, Hasher.Internal.compiled_layouts[layout].content_div);
+            document.body.appendChild(Hasher.Internal.compiled_layouts[layout].root_element);
+          }
+
+          var results = Hasher.Internal.views[view].apply(null, arguments.slice(1));
+          Hasher.Internal.compiled_layouts[layout].content_div.innerHTML = '';
+          Hasher.Internal.compiled_layouts[layout].content_div.appendChild(results);
+        }
+      }
     };
     
-    return {
-      initializer: function(callback) {
-        Hasher.Internal.initializers.push(callback);
-      },
-      
-      before_filter: function(filter_name, callback) {
-        Hasher.Internal.controllers[namespace].before_filters.push({ name: filter_name, callback: callback });
-      },
-      
-      layout: function(layout_name) {
-        Hasher.Internal.controllers[namespace].layout = 'Layout.' + layout_name;
-      },
-      
-      create_action: function(action_name, callback) {
-        Hasher.Internal.controllers[namespace].actions[action_name] = function(e) {
-          var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
-          if (e && (typeof e.cancelBubble != 'undefined')) {
-            arguments = arguments.slice(1);
-            e.cancelBubble = true;
-            e.returnValue = false;
-          }
-          callback.apply(null, arguments);
-        };
-      },
-      
-      route: function(routes) {
-        for (var route in routes) {
-          Hasher.Internal.routes.push({ 
-            regex: (new RegExp("^" + route.replace(/:[a-z_]+/g, '([^/]+)') + '$')),
-            callback: routes[route],
-            default_view: namespace + '.' + routes[route],
-            namespace: namespace
-          });
-        }
-      },
-
-      redirect_to: function(url) {
-        Hasher.Internal.performed_action = true;
-        Hasher.Routes.setHash(url);
-      },
-
-      render: function() {
-        var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
-
-        Hasher.Internal.performed_action = true;
-
-        var view = arguments[0];
-        if (view.indexOf('.') == -1) view = namespace + '.' + view;
-        if (!Hasher.Internal.views[view]) {
-          alert('View not found: ' + view);
-          return;
-        }
-        
-        var parent_chain = Hasher.InternalHelpers.controller_parent_chain(namespace);
-        var layout = null;
-        for (var i=0; i < parent_chain.length; i++) {
-          if (parent_chain[i].layout) layout = parent_chain[i].layout;
-        }
-
-        if (layout && !Hasher.Internal.views[layout]) {
-          alert('Layout not found: ' + layout);
-          return;
-        }
-
-        if (typeof(view) != 'string') {
-          if (view.layout) layout = view.layout;
-          view = view.view;
-        }
-
-        if (!Hasher.Internal.compiled_layouts[layout]) {
-          Hasher.Internal.compiled_layouts[layout] = {};
-          Hasher.Internal.compiled_layouts[layout].content_div = document.createElement('div');
-          Hasher.Internal.compiled_layouts[layout].root_element = Hasher.Internal.views[layout].call(null, Hasher.Internal.compiled_layouts[layout].content_div);
-          document.body.appendChild(Hasher.Internal.compiled_layouts[layout].root_element);
-        }
-
-        var results = Hasher.Internal.views[view].apply(null, arguments.slice(1));
-        Hasher.Internal.compiled_layouts[layout].content_div.innerHTML = '';
-        Hasher.Internal.compiled_layouts[layout].content_div.appendChild(results);
-      }
-
-    };
+    return Hasher.Internal.controllers[namespace].scope;
   },
   
   View: function(namespace) {
@@ -218,7 +217,9 @@ var Hasher = {
           (route.callback || function(){}).apply(null, matches.slice(1));
 
           // render default view if render/redirect wasn't called
-          //if (!Hasher.Internal.performed_action) Hasher.Controllers.render(route.default_view);
+          if (!Hasher.Internal.performed_action) {
+            Hasher.Internal.controllers[route.namespace].scope.render(route.default_view);
+          }
 
           return;
         }
