@@ -1,6 +1,6 @@
 /**********************************************************************************
  *                                                                                *
- *  Hasher.js - 0.0.3 - A client-side view-controller framework for JavaScript.   *
+ *  Hasher.js - 0.0.4 - A client-side view-controller framework for JavaScript.   *
  *                                                                                *
  *  Copyright (C) 2011 by Warren Konkel                                           *
  *                                                                                *
@@ -29,6 +29,7 @@
 //   - figure out better way of communicating errors other than alert()
 //   - browser quirks (tbody for table(), colSpan/cellSpacing/frameBorder case sensitivity, etc)
 //   - replace controller_parent_chain (i.e. get_recursive_property('before_filters', ['default']), auto merge hashes/arrays, etc)
+//   - skip_before_filter
 //   - arguments to_array'ing is gheto (search: _arguments)
 //   - figure out a nice way of passing event object into action() for mouse/keyboard/etc events
 //   - skip_before_filter
@@ -37,6 +38,22 @@
 //   - eliminate need for "return" in create_view (first dom element creation call automatically sets itself to the return value for create_view)
 
 var Hasher = {
+  Event: {
+    listeners: {},
+    
+    fire: function(event) {
+      var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]);
+      (Hasher.Event.listeners[event] || []).map(function(listener) {
+        listener.callback.apply(listener.context, _arguments.slice(1));
+      });
+    },
+    
+    observe: function(event, callback, context) {
+      if (!Hasher.Event.listeners[event]) Hasher.Event.listeners[event] = [];
+      Hasher.Event.listeners[event].push({ callback: callback, context: context } );
+    }
+  },
+  
   Controller: function(namespace, parent) {
     // controller object defaults
     Hasher.Internal.controllers[namespace] = Hasher.Internal.controllers[namespace] || {
@@ -67,6 +84,23 @@ var Hasher = {
             }
             callback.apply(null, arguments);
           };
+        },
+        
+        action: function(action_name) {
+          var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
+          var args = arguments.slice(1);
+          return function(e) {
+            if (e && (typeof e.cancelBubble != 'undefined')) {
+              e.cancelBubble = true;
+              e.returnValue = false;
+            }
+            Hasher.Internal.controllers[namespace].actions[action_name].apply(null,args); 
+          };
+        },
+        
+        call_action: function(action_name) {
+          var _arguments = []; for (var i=1; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
+          return Hasher.Internal.controllers[namespace].actions[action_name].apply(_arguments);
         },
 
         route: function(routes) {
@@ -148,7 +182,7 @@ var Hasher = {
             e.cancelBubble = true;
             e.returnValue = false;
           }
-          Hasher.Internal.controllers[namespace].actions[name](args); 
+          Hasher.Internal.controllers[namespace].actions[name].apply(null,args); 
         };
       },
       
@@ -167,7 +201,6 @@ var Hasher = {
     controllers: {},
     views: {},
     compiled_layouts: {},
-    hash_change_listeners: [],
     initializers: []
   },
 
@@ -189,10 +222,7 @@ var Hasher = {
       if (hash != Hasher.Internal.previous_hash) {
         Hasher.Internal.previous_hash = hash;
         Hasher.Routes.recognizeHash(hash);
-
-        for (var i=0; i < Hasher.Internal.hash_change_listeners.length; i++) {
-          Hasher.Internal.hash_change_listeners[i].callback.call(Hasher.Internal.hash_change_listeners[i].context, hash);
-        }
+        Hasher.Event.fire('hash_change', hash);
       }
     },
 
@@ -285,7 +315,7 @@ var Hasher = {
             if (k == 'events') {
               for (var ek in options[k]) {
                 if (ek == 'hash_change') {
-                  Hasher.Internal.hash_change_listeners.push({ callback: options[k][ek], context: element });
+                  Hasher.Event.observe('hash_change', options[k][ek], element);
                 } else if (element.addEventListener) {
                   element.addEventListener(ek, options[k][ek], false);
                 } else {
@@ -294,12 +324,13 @@ var Hasher = {
               }
             } else if (((k == 'href') || (k == 'action')) && options[k] && options[k].apply) {
               
+              var real_callback = options[k];
               var callback = function(e) {
                 if (e && (typeof e.cancelBubble != 'undefined')) {
                   e.cancelBubble = true;
                   e.returnValue = false;
                 }
-                options[k].apply(element); //, e);
+                real_callback.apply(element); //, e);
               }
 
               var hook = k == 'href' ? 'click' : 'submit';
