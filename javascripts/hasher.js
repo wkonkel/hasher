@@ -24,18 +24,6 @@
  *                                                                                *
  **********************************************************************************/
  
-
-// TODO:
-//   - figure out better way of communicating errors other than alert()
-//   - browser quirks (tbody for table(), colSpan/cellSpacing/frameBorder case sensitivity, etc)
-//   - replace controller_parent_chain (i.e. get_recursive_property('before_filters', ['default']), auto merge hashes/arrays, etc)
-//   - arguments to_array'ing is gheto (search: _arguments) -- replace with: var args = Array.prototype.slice.call(arguments, 0);
-//   - figure out a nice way of passing event object into action() for mouse/keyboard/etc events
-//   - allow no layout
-//   - skip_before_filters
-//   - new variable scope can pollute window[] (see spinner_row() in webforward and menu/item in application)
-//   - eliminate need for "return" in create_view (first dom element creation call automatically sets itself to the return value for create_view)
-
 var Hasher = {
   Event: {
     listeners: {},
