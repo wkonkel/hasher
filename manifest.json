@@ -1,6 +1,4 @@
 {
-  "version": "0.0.4",
-  
   "javascripts": [
     "javascripts/hasher.js"
   ]
