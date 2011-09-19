@@ -1,6 +1,6 @@
 /**********************************************************************************
  *                                                                                *
- *  Hasher.js - 0.0.4 - A client-side view-controller framework for JavaScript.   *
+ *  Hasher.js - 0.0.5 - A client-side view-controller framework for JavaScript.   *
  *                                                                                *
  *  Copyright (C) 2011 by Warren Konkel                                           *
  *                                                                                *
@@ -29,11 +29,10 @@
 //   - figure out better way of communicating errors other than alert()
 //   - browser quirks (tbody for table(), colSpan/cellSpacing/frameBorder case sensitivity, etc)
 //   - replace controller_parent_chain (i.e. get_recursive_property('before_filters', ['default']), auto merge hashes/arrays, etc)
-//   - skip_before_filter
-//   - arguments to_array'ing is gheto (search: _arguments)
+//   - arguments to_array'ing is gheto (search: _arguments) -- replace with: var args = Array.prototype.slice.call(arguments, 0);
 //   - figure out a nice way of passing event object into action() for mouse/keyboard/etc events
-//   - skip_before_filter
 //   - allow no layout
+//   - skip_before_filters
 //   - new variable scope can pollute window[] (see spinner_row() in webforward and menu/item in application)
 //   - eliminate need for "return" in create_view (first dom element creation call automatically sets itself to the return value for create_view)
 
@@ -60,6 +59,9 @@ var Hasher = {
       parent: parent,
       layout: null,
       before_filters: [],
+      skip_before_filters: [],
+      after_filters: [],
+      skip_after_filters: [],
       actions: {},
       scope: {
         initializer: function(callback) {
@@ -69,6 +71,18 @@ var Hasher = {
         before_filter: function(filter_name, callback) {
           Hasher.Internal.controllers[namespace].before_filters.push({ name: filter_name, callback: callback });
         },
+
+        // skip_before_filter: function(filter_name) {
+        //   Hasher.Internal.controllers[namespace].skip_before_filters.push({ name: filter_name, callback: callback });
+        // },
+
+        after_filter: function(filter_name, callback) {
+          Hasher.Internal.controllers[namespace].after_filters.push({ name: filter_name, callback: callback });
+        },
+        
+        // skip_after_filter: function(filter_name) {
+        //   Hasher.Internal.controllers[namespace].skip_after_filters.push({ name: filter_name, callback: callback });
+        // },
 
         layout: function(layout_name) {
           Hasher.Internal.controllers[namespace].layout = 'Layout.' + layout_name;
@@ -153,6 +167,10 @@ var Hasher = {
             Hasher.Internal.compiled_layouts[layout].root_element = Hasher.Internal.views[layout].call(null, Hasher.Internal.compiled_layouts[layout].content_div);
             document.body.appendChild(Hasher.Internal.compiled_layouts[layout].root_element);
           }
+          
+          for (var key in Hasher.Internal.compiled_layouts) {
+            Hasher.Internal.compiled_layouts[key].root_element.style.display = (key == layout ? 'block' : 'none');
+          }
 
           var results = Hasher.Internal.views[view].apply(null, arguments.slice(1));
           Hasher.Internal.compiled_layouts[layout].content_div.innerHTML = '';
@@ -182,7 +200,8 @@ var Hasher = {
             e.cancelBubble = true;
             e.returnValue = false;
           }
-          Hasher.Internal.controllers[namespace].actions[name].apply(null,args); 
+          var inner_args = []; for (var i=0; i < arguments.length; i++) inner_args.push(arguments[i]);
+          Hasher.Internal.controllers[namespace].actions[name].apply(null,args.concat(inner_args)); 
         };
       },
       
@@ -233,7 +252,8 @@ var Hasher = {
 
         var matches = hash.match(route.regex);
         if (matches) {
-          // run before filters
+          // run before filters (copied below)
+          // TODO: check skip_before_filters and skip_after_filters
           var controller_chain = Hasher.InternalHelpers.controller_parent_chain(route.namespace);
           for (var j=0; j < controller_chain.length; j++) {
             for (var k=0; k < (controller_chain[j].before_filters || []).length; k++) {
@@ -249,6 +269,15 @@ var Hasher = {
           // render default view if render/redirect wasn't called
           if (!Hasher.Internal.performed_action) {
             Hasher.Internal.controllers[route.namespace].scope.render(route.default_view);
+          }
+
+          // run after filters (copied form above)
+          var controller_chain = Hasher.InternalHelpers.controller_parent_chain(route.namespace);
+          for (var j=0; j < controller_chain.length; j++) {
+            for (var k=0; k < (controller_chain[j].after_filters || []).length; k++) {
+              controller_chain[j].after_filters[k].callback.call();
+              if (Hasher.Internal.performed_action) return;
+            }
           }
 
           return;
@@ -322,7 +351,7 @@ var Hasher = {
                   element.attachEvent("on" + ek, options[k][ek]);
                 }
               }
-            } else if (((k == 'href') || (k == 'action')) && options[k] && options[k].apply) {
+            } else if ((k == 'href') && (typeof(options[k]) == 'function')) {
               
               var real_callback = options[k];
               var callback = function(e) {
@@ -333,14 +362,39 @@ var Hasher = {
                 real_callback.apply(element); //, e);
               }
 
-              var hook = k == 'href' ? 'click' : 'submit';
+              element.setAttribute('href', '#');
+
+              var hook = 'click';
               if (element.addEventListener) {
                 element.addEventListener(hook, callback, false);
               } else {
                 element.attachEvent("on" + hook, callback);
               }
+            } else if ((k == 'action') && (typeof(options[k]) == 'function')) {
+              
+              var real_callback = options[k];
+              var callback = function(e) {
+                if (e && (typeof e.cancelBubble != 'undefined')) {
+                  e.cancelBubble = true;
+                  e.returnValue = false;
+                }
+                
+                var serialized_form = {};
+                var elems = element.getElementsByTagName('*');
+                for (var i=0; i < elems.length; i++) {
+                  if (elems[i].name) serialized_form[elems[i].name] = elems[i].value;
+                  // TODO: support textarea, select, multiple select, checkbox/radios, etc
+                }
+                
+                real_callback.call(null, serialized_form);
+              }
 
-              element.setAttribute('href', '#');
+              var hook = 'submit';
+              if (element.addEventListener) {
+                element.addEventListener(hook, callback, false);
+              } else {
+                element.attachEvent("on" + hook, callback);
+              }
             
             } else if (k == 'only_if') {
               if (!options[k]) return null;
