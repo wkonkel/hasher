@@ -80,6 +80,7 @@ var Hasher = {
           Hasher.Internal.controllers[namespace].actions[action_name] = function(e) {
             var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
             if (e && (typeof e.cancelBubble != 'undefined')) {
+              // TODO: sometimes you want this event... perhaps suppress only some events
               arguments = arguments.slice(1);
               e.cancelBubble = true;
               e.returnValue = false;
@@ -87,7 +88,7 @@ var Hasher = {
             callback.apply(null, arguments);
           };
         },
-        
+                
         action: function(action_name) {
           var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
           var args = arguments.slice(1);
@@ -181,15 +182,21 @@ var Hasher = {
       },
       
       action: function(name) {
-        var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
-        var args = arguments.slice(1);
+        // accepts "action_name" (current controller) or "Controller.action_name"
+        if (name.indexOf('.') > 0) {
+          var parts = name.split('.');
+          namespace = parts[0];
+          name = parts[1];
+        }
+        
+        var outer_args = Array.prototype.slice.call(arguments,1);
         return function(e) {
           if (e && (typeof e.cancelBubble != 'undefined')) {
             e.cancelBubble = true;
             e.returnValue = false;
           }
-          var inner_args = []; for (var i=0; i < arguments.length; i++) inner_args.push(arguments[i]);
-          Hasher.Internal.controllers[namespace].actions[name].apply(null,args.concat(inner_args)); 
+          var inner_args = Array.prototype.slice.call(arguments);
+          Hasher.Internal.controllers[namespace].actions[name].apply(null,outer_args.concat(inner_args)); 
         };
       },
       
