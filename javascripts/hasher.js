@@ -102,8 +102,7 @@ var Hasher = {
         },
         
         call_action: function(action_name) {
-          var _arguments = []; for (var i=1; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
-          return Hasher.Internal.controllers[namespace].actions[action_name].apply(_arguments);
+          return Hasher.Internal.controllers[namespace].actions[action_name].apply(null, Array.prototype.slice.call(arguments,1));
         },
 
         route: function(routes) {
@@ -120,6 +119,10 @@ var Hasher = {
         redirect_to: function(url) {
           Hasher.Internal.performed_action = true;
           Hasher.Routes.setHash(url);
+        },
+
+        helper: function(name) {
+          return Hasher.Internal.helpers[namespace + '.' + name].apply(null, Array.prototype.slice.call(arguments,1))
         },
 
         render: function() {
@@ -180,6 +183,14 @@ var Hasher = {
       create_view: function(name, callback) {
         Hasher.Internal.views[namespace + '.' + name] = callback;
       },
+
+      create_helper: function(name, callback) {
+        Hasher.Internal.helpers[namespace + '.' + name] = callback;
+      },
+      
+      helper: function(name) {
+        return Hasher.Internal.helpers[namespace + '.' + name].apply(null, Array.prototype.slice.call(arguments,1))
+      },
       
       action: function(name) {
         // accepts "action_name" (current controller) or "Controller.action_name"
@@ -214,6 +225,7 @@ var Hasher = {
     routes: [],
     controllers: {},
     views: {},
+    helpers: {},
     compiled_layouts: {},
     initializers: []
   },
