@@ -38,6 +38,13 @@ var Hasher = {
     observe: function(event, callback, context) {
       if (!Hasher.Event.listeners[event]) Hasher.Event.listeners[event] = [];
       Hasher.Event.listeners[event].push({ callback: callback, context: context } );
+    },
+    
+    stop: function(e) {
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+      e.cancelBubble = true;
+      e.returnValue = false;
     }
   },
   
@@ -82,8 +89,7 @@ var Hasher = {
             if (e && (typeof e.cancelBubble != 'undefined')) {
               // TODO: sometimes you want this event... perhaps suppress only some events
               arguments = arguments.slice(1);
-              e.cancelBubble = true;
-              e.returnValue = false;
+              Hasher.Event.stop(e);
             }
             callback.apply(null, arguments);
           };
@@ -94,8 +100,7 @@ var Hasher = {
           var args = arguments.slice(1);
           return function(e) {
             if (e && (typeof e.cancelBubble != 'undefined')) {
-              e.cancelBubble = true;
-              e.returnValue = false;
+              Hasher.Event.stop(e);
             }
             Hasher.Internal.controllers[namespace].actions[action_name].apply(null,args); 
           };
@@ -203,8 +208,7 @@ var Hasher = {
         var outer_args = Array.prototype.slice.call(arguments,1);
         return function(e) {
           if (e && (typeof e.cancelBubble != 'undefined')) {
-            e.cancelBubble = true;
-            e.returnValue = false;
+            Hasher.Event.stop(e);
           }
           var inner_args = Array.prototype.slice.call(arguments);
           Hasher.Internal.controllers[namespace].actions[name].apply(null,outer_args.concat(inner_args)); 
@@ -363,8 +367,7 @@ var Hasher = {
               var real_callback = options[k];
               var callback = function(e) {
                 if (e && (typeof e.cancelBubble != 'undefined')) {
-                  e.cancelBubble = true;
-                  e.returnValue = false;
+                  Hasher.Event.stop(e);
                 }
                 real_callback.apply(element); //, e);
               }
@@ -381,10 +384,7 @@ var Hasher = {
               
               var real_callback = options[k];
               var callback = function(e) {
-                if (e && (typeof e.cancelBubble != 'undefined')) {
-                  e.cancelBubble = true;
-                  e.returnValue = false;
-                }
+                Hasher.Event.stop(e);
                 
                 var serialized_form = {};
                 var elems = element.getElementsByTagName('*');
