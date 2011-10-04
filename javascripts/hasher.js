@@ -351,6 +351,22 @@ var Hasher = {
             options = arguments[start++];
           }
 
+          // set this first so hint_text works below
+          if (options.type || (tag == 'input')) {
+            element.setAttribute('type', options.type || 'text');
+            if (options.type) delete options.type;
+          }
+
+          if (options['class']) {
+            element.className = options['class'];
+            delete options['class'];
+          }
+
+          if (options.style) {
+            element.style.cssText = options.style;
+            delete options.style;
+          }
+
           for (var k in options) {
             if (k == 'events') {
               for (var ek in options[k]) {
@@ -389,7 +405,7 @@ var Hasher = {
                 var serialized_form = {};
                 var elems = element.getElementsByTagName('*');
                 for (var i=0; i < elems.length; i++) {
-                  if (elems[i].name) serialized_form[elems[i].name] = elems[i].value;
+                  if (elems[i].name) serialized_form[elems[i].name] = (elems[i].value == elems[i].hint_text ? '' : elems[i].value);
                   // TODO: support textarea, select, multiple select, checkbox/radios, etc
                 }
                 
@@ -403,12 +419,49 @@ var Hasher = {
                 element.attachEvent("on" + hook, callback);
               }
             
+            } else if (k == 'hint_text') {
+              (function() { 
+                var hint_text = options[k];
+                element.hint_text = hint_text;
+
+                var real_type = element.getAttribute('type');
+
+                var focus_callback = function() {
+                  if (element.value == hint_text) {
+                    element.value = '';
+                    element.style.color = 'inherit';
+                    if (real_type == 'password') element.setAttribute('type', 'password');
+                  }
+                };
+
+                var blur_callback = function() {
+                  if (element.value == '') {
+                    element.value = hint_text;
+                    element.style.color = '#888';
+                    if (real_type == 'password') element.setAttribute('type', 'text');
+                  }
+                };
+  
+                // initial state
+                blur_callback();
+              
+                var hook = 'focus';
+                if (element.addEventListener) {
+                  element.addEventListener(hook, focus_callback, false);
+                } else {
+                  element.attachEvent("on" + hook, focus_callback);
+                }
+
+                var hook = 'blur';
+                if (element.addEventListener) {
+                  element.addEventListener(hook, blur_callback, false);
+                } else {
+                  element.attachEvent("on" + hook, blur_callback);
+                }
+              })();
+
             } else if (k == 'only_if') {
               if (!options[k]) return null;
-            } else if (k == 'class') {
-              element.className = options[k];
-            } else if (k == 'style') {
-              element.style.cssText = options[k];
             } else {
               element.setAttribute(k, options[k]);
             }
