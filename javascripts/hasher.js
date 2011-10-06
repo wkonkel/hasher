@@ -106,8 +106,14 @@ var Hasher = {
           };
         },
         
-        call_action: function(action_name) {
-          return Hasher.Internal.controllers[namespace].actions[action_name].apply(null, Array.prototype.slice.call(arguments,1));
+        call_action: function(name) {
+          var nmsp = namespace;
+          if (name.indexOf('.') > 0) {
+            var parts = name.split('.');
+            nmsp = parts[0];
+            name = parts[1];
+          }
+          return Hasher.Internal.controllers[nmsp].actions[name].apply(null, Array.prototype.slice.call(arguments,1));
         },
 
         route: function(routes) {
@@ -127,7 +133,8 @@ var Hasher = {
         },
 
         helper: function(name) {
-          return Hasher.Internal.helpers[namespace + '.' + name].apply(null, Array.prototype.slice.call(arguments,1))
+          if (name.indexOf('.') == -1) name = namespace + '.' + name;
+          return Hasher.Internal.helpers[name].apply(null, Array.prototype.slice.call(arguments,1));
         },
 
         render: function() {
@@ -194,14 +201,16 @@ var Hasher = {
       },
       
       helper: function(name) {
-        return Hasher.Internal.helpers[namespace + '.' + name].apply(null, Array.prototype.slice.call(arguments,1))
+        if (name.indexOf('.') == -1) name = namespace + '.' + name;
+        return Hasher.Internal.helpers[name].apply(null, Array.prototype.slice.call(arguments,1));
       },
       
       action: function(name) {
         // accepts "action_name" (current controller) or "Controller.action_name"
+        var nmsp = namespace;
         if (name.indexOf('.') > 0) {
           var parts = name.split('.');
-          namespace = parts[0];
+          nmsp = parts[0];
           name = parts[1];
         }
         
@@ -211,7 +220,7 @@ var Hasher = {
             Hasher.Event.stop(e);
           }
           var inner_args = Array.prototype.slice.call(arguments);
-          Hasher.Internal.controllers[namespace].actions[name].apply(null,outer_args.concat(inner_args)); 
+          Hasher.Internal.controllers[nmsp].actions[name].apply(null,outer_args.concat(inner_args)); 
         };
       },
       
