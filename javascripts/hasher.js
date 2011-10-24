@@ -95,14 +95,20 @@ var Hasher = {
           };
         },
                 
-        action: function(action_name) {
+        action: function(name) {
           var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
           var args = arguments.slice(1);
           return function(e) {
             if (e && (typeof e.cancelBubble != 'undefined')) {
               Hasher.Event.stop(e);
             }
-            Hasher.Internal.controllers[namespace].actions[action_name].apply(null,args); 
+            var nmsp = namespace;
+            if (name.indexOf('.') > 0) {
+              var parts = name.split('.');
+              nmsp = parts[0];
+              name = parts[1];
+            }
+            Hasher.Internal.controllers[nmsp].actions[name].apply(null,args); 
           };
         },
         
@@ -413,8 +419,14 @@ var Hasher = {
                 var serialized_form = {};
                 var elems = element.getElementsByTagName('*');
                 for (var i=0; i < elems.length; i++) {
-                  if (elems[i].name) serialized_form[elems[i].name] = elems[i].value;
-                  // TODO: support textarea, select, multiple select, checkbox/radios, etc
+                  if (elems[i].name) {
+                    if (elems[i].tagName == 'SELECT') {
+                      // TODO: support multiple select
+                      serialized_form[elems[i].name] = elems[i].options[elems[i].selectedIndex].value;
+                    } else if ((['radio', 'checkbox'].indexOf(elems[i].getAttribute('type')) == -1) || elems[i].checked) {
+                      serialized_form[elems[i].name] = elems[i].value;
+                    } 
+                  }
                 }
                 
                 real_callback.call(null, serialized_form);
