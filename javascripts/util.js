@@ -28,12 +28,25 @@ with (Hasher()) {
   });
 
   define('shift_options_from_args', function(args) {
-    return (typeof(args[0]) == 'object') && (typeof(args[0].nodeType) == 'undefined') ? args.shift() : {};
+    if ((typeof(args[0]) == 'object') && (typeof(args[0].nodeType) == 'undefined')) {
+      return args.shift();
+    } else if ((typeof(args[args.length-1]) == 'object') && (typeof(args[args.length-1].nodeType) == 'undefined')) {
+      return args.pop();
+    } else {
+      return {};
+    }
   });
   
   define('for_each', function() {
     var objs = flatten_to_array(arguments);
     var callback = objs.pop();
     for (var i=0; i < objs.length; i++) callback(objs[i]);
+  });
+  
+  define('curry', function() {
+    var real_args = Array.prototype.slice.call(arguments);
+    return (function() {
+      real_args.shift().apply(null, Array.prototype.concat.apply(real_args, arguments));
+    });
   });
 }

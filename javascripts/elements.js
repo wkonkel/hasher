@@ -9,8 +9,7 @@ with (Hasher()) {
     // process attributes
     for (var k in options) {
       if (k.indexOf('on') == 0) {
-        var tmp_callback = options[k];
-        var callback = function() { tmp_callback.apply(element, Array.prototype.slice.call(arguments)); };
+        var callback = (function(cb) { return function() { cb.apply(element, Array.prototype.slice.call(arguments)); } })(options[k]);
         if (element.addEventListener) {
           element.addEventListener(k.substring(2).toLowerCase(), callback, false);
         } else {
@@ -61,15 +60,8 @@ with (Hasher()) {
         stop_event(e);
         real_callback();
       }
-    } else if (options.href && options.href.indexOf('#') == 0) {
-      var hash = options.href;
-      options.href = '';
-      options.onClick = function(e) {
-        stop_event(e);
-        set_route(hash);
-      }
     }
-    
+
     return element('a', options, arguments);
   });
   

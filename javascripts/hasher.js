@@ -24,9 +24,6 @@
  *                                                                                *
  **********************************************************************************/
 
-// TODO
-// - in the element() definition, have it check to see if objects responds to .hasLiveUpdates() and register hooks accordingly
-
 var Hasher = function(namespace, base) {
   var create_context = function(proto) {
     function Context() {};
@@ -34,30 +31,16 @@ var Hasher = function(namespace, base) {
     return new Context();
   }
 
-  if (!Hasher.instance) Hasher.instance = create_context({ define: function() { this[arguments[0]] = arguments[1]; } });
+  if (!Hasher.instance) Hasher.instance = create_context({ define: function() { (arguments[2] || this)[arguments[0]] = arguments[1]; } });
 
   if (namespace) {
-    if (!Hasher.instance[namespace]) Hasher.instance[namespace] = create_context(base ? Hasher.instance[base] : Hasher.instance);
-    return Hasher.instance[namespace];
+    if (base && !Hasher.instance[base]) {
+      alert('Invalid Hasher parent: ' + base);
+    } else {
+      if (!Hasher.instance[namespace]) Hasher.instance[namespace] = create_context(base ? Hasher.instance[base] : Hasher.instance);
+      return Hasher.instance[namespace];
+    }
   } else {
     return Hasher.instance;
   }
 };
-
-
-
-
-
-// var Hasher = function(namespace, base) {
-//   if (!Hasher.prototype.define) Hasher.prototype.define = function() { this[arguments[0]] = arguments[1]; }
-// 
-//   if (namespace) {
-//     if (!Hasher.prototype[namespace]) {
-//       Hasher.prototype[namespace] = {};
-//       Hasher.prototype[namespace].__proto__ = base ? Hasher.prototype[base] : Hasher.prototype;
-//     }
-//     return Hasher.prototype[namespace];
-//   } else {
-//     return Hasher.prototype;
-//   }
-// };
