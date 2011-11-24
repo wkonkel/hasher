@@ -469,6 +469,11 @@ var Hasher = {
 
 
 window.onload = function() {
+  //detect whether the browser is IE7
+  if (/MSIE (\d+\.\d+);/.test(navigator.userAgent) && (new Number(RegExp.$1) == 7)) {
+    Hasher.ie7_browser = true;
+  }
+  
   setInterval(Hasher.Routes.checkHash, 10);
   for (var i=0; i < Hasher.Internal.initializers.length; i++) {
     Hasher.Internal.initializers[i].call();
