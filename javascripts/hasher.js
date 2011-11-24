@@ -23,23 +23,24 @@
  *  THE SOFTWARE.                                                                 *
  *                                                                                *
  **********************************************************************************/
- 
+
 var Hasher = {
+  ie7_browser: false,
   Event: {
     listeners: {},
-    
+
     fire: function(event) {
       var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]);
       (Hasher.Event.listeners[event] || []).map(function(listener) {
         listener.callback.apply(listener.context, _arguments.slice(1));
       });
     },
-    
+
     observe: function(event, callback, context) {
       if (!Hasher.Event.listeners[event]) Hasher.Event.listeners[event] = [];
       Hasher.Event.listeners[event].push({ callback: callback, context: context } );
     },
-    
+
     stop: function(e) {
       if (e.preventDefault) e.preventDefault();
       if (e.stopPropagation) e.stopPropagation();
@@ -47,7 +48,7 @@ var Hasher = {
       e.returnValue = false;
     }
   },
-  
+
   Controller: function(namespace, parent) {
     // controller object defaults
     Hasher.Internal.controllers[namespace] = Hasher.Internal.controllers[namespace] || {
@@ -74,7 +75,7 @@ var Hasher = {
         after_filter: function(filter_name, callback) {
           Hasher.Internal.controllers[namespace].after_filters.push({ name: filter_name, callback: callback });
         },
-        
+
         // skip_after_filter: function(filter_name) {
         //   Hasher.Internal.controllers[namespace].skip_after_filters.push({ name: filter_name, callback: callback });
         // },
@@ -94,7 +95,7 @@ var Hasher = {
             callback.apply(null, arguments);
           };
         },
-                
+
         action: function(name) {
           var _arguments = []; for (var i=0; i < arguments.length; i++) _arguments.push(arguments[i]); arguments = _arguments;
           var args = arguments.slice(1);
@@ -108,10 +109,10 @@ var Hasher = {
               nmsp = parts[0];
               name = parts[1];
             }
-            Hasher.Internal.controllers[nmsp].actions[name].apply(null,args); 
+            Hasher.Internal.controllers[nmsp].actions[name].apply(null,args);
           };
         },
-        
+
         call_action: function(name) {
           var nmsp = namespace;
           if (name.indexOf('.') > 0) {
@@ -124,7 +125,7 @@ var Hasher = {
 
         route: function(routes) {
           for (var route in routes) {
-            Hasher.Internal.routes.push({ 
+            Hasher.Internal.routes.push({
               regex: (new RegExp("^" + route.replace(/:[a-z_]+/g, '([^/]+)') + '$')),
               callback: routes[route],
               default_view: namespace + '.' + routes[route],
@@ -177,7 +178,7 @@ var Hasher = {
             Hasher.Internal.compiled_layouts[layout].root_element = Hasher.Internal.views[layout].call(null, Hasher.Internal.compiled_layouts[layout].content_div);
             document.body.appendChild(Hasher.Internal.compiled_layouts[layout].root_element);
           }
-          
+
           for (var key in Hasher.Internal.compiled_layouts) {
             Hasher.Internal.compiled_layouts[key].root_element.style.display = (key == layout ? 'block' : 'none');
           }
@@ -188,16 +189,16 @@ var Hasher = {
         }
       }
     };
-    
+
     return Hasher.Internal.controllers[namespace].scope;
   },
-  
+
   View: function(namespace) {
     var methods = {
       create_layout: function(name, callback) {
         Hasher.Internal.views['Layout.' + name] = callback;
       },
-      
+
       create_view: function(name, callback) {
         Hasher.Internal.views[namespace + '.' + name] = callback;
       },
@@ -205,12 +206,12 @@ var Hasher = {
       create_helper: function(name, callback) {
         Hasher.Internal.helpers[namespace + '.' + name] = callback;
       },
-      
+
       helper: function(name) {
         if (name.indexOf('.') == -1) name = namespace + '.' + name;
         return Hasher.Internal.helpers[name].apply(null, Array.prototype.slice.call(arguments,1));
       },
-      
+
       action: function(name) {
         // accepts "action_name" (current controller) or "Controller.action_name"
         var nmsp = namespace;
@@ -219,24 +220,24 @@ var Hasher = {
           nmsp = parts[0];
           name = parts[1];
         }
-        
+
         var outer_args = Array.prototype.slice.call(arguments,1);
         return function(e) {
           if (e && (typeof e.cancelBubble != 'undefined')) {
             Hasher.Event.stop(e);
           }
           var inner_args = Array.prototype.slice.call(arguments);
-          Hasher.Internal.controllers[nmsp].actions[name].apply(null,outer_args.concat(inner_args)); 
+          Hasher.Internal.controllers[nmsp].actions[name].apply(null,outer_args.concat(inner_args));
         };
       },
-      
+
       inside_layout: function() {},
       inside_body: function() {}
     };
-    
+
     // add in dom helpers
     for (var key in Hasher.DomHelpers) methods[key] = Hasher.DomHelpers[key];
-    
+
     return methods;
   },
 
@@ -313,7 +314,7 @@ var Hasher = {
       alert('404 not found: ' + hash)
     }
   },
-  
+
   InternalHelpers: {
     // given a controller object (or name as a string), returns an array of parent controllers
     controller_parent_chain: function(controller) {
@@ -368,6 +369,11 @@ var Hasher = {
 
           if (options.type || (tag == 'input')) {
             element.setAttribute('type', options.type || 'text');
+            // Fix bug for IE7: when create dynamically a radio button group/checkbox, we cannot set attributes: name, checked, etc.
+            // This bug is fixed in IE8
+            if (Hasher.ie7_browser && (options.type == 'radio' || options.type == 'checkbox')) {
+              element = document.createElement("<input type='" + options.type + "' " + (options['name'] ? "name='" + options['name'] + "'" : "") + (options['checked'] != null ? "CHECKED":" ") + "/>");
+            }
             if (options.type) delete options.type;
           }
 
@@ -393,7 +399,7 @@ var Hasher = {
                 }
               }
             } else if ((k == 'href') && (typeof(options[k]) == 'function')) {
-              
+
               var real_callback = options[k];
               var callback = function(e) {
                 if (e && (typeof e.cancelBubble != 'undefined')) {
@@ -411,11 +417,9 @@ var Hasher = {
                 element.attachEvent("on" + hook, callback);
               }
             } else if ((k == 'action') && (typeof(options[k]) == 'function')) {
-              
               var real_callback = options[k];
               var callback = function(e) {
                 Hasher.Event.stop(e);
-                
                 var serialized_form = {};
                 var elems = element.getElementsByTagName('*');
                 for (var i=0; i < elems.length; i++) {
@@ -425,10 +429,10 @@ var Hasher = {
                       serialized_form[elems[i].name] = elems[i].options[elems[i].selectedIndex].value;
                     } else if ((['radio', 'checkbox'].indexOf(elems[i].getAttribute('type')) == -1) || elems[i].checked) {
                       serialized_form[elems[i].name] = elems[i].value;
-                    } 
+                    }
                   }
                 }
-                
+
                 real_callback.call(null, serialized_form);
               }
 
@@ -453,19 +457,23 @@ var Hasher = {
               element.appendChild(document.createTextNode(arguments[j]));
             }
           }
-
           return element;
         });
       }());
     }
-    
+
     return helpers;
   })()
 
 };
 
 
-window.onload = function() { 
+window.onload = function() {
+  //detect whether the browser is IE7
+  if (/MSIE (\d+\.\d+);/.test(navigator.userAgent) && (new Number(RegExp.$1) == 7)) {
+    Hasher.ie7_browser = true;
+  }
+  
   setInterval(Hasher.Routes.checkHash, 10);
   for (var i=0; i < Hasher.Internal.initializers.length; i++) {
     Hasher.Internal.initializers[i].call();
