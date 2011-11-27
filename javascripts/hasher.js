@@ -24,6 +24,9 @@
  *                                                                                *
  **********************************************************************************/
 
+// "There is nothing you can do with a with statement that you can't do as well without one." 
+//   --Douglas Crockford  http://www.youtube.com/watch?v=taaEzHI9xyY
+
 var Hasher = function(namespace, base) {
   var create_context = function(proto) {
     function Context() {};
@@ -31,7 +34,11 @@ var Hasher = function(namespace, base) {
     return new Context();
   }
 
-  if (!Hasher.instance) Hasher.instance = create_context({ define: function() { (arguments[2] || this)[arguments[0]] = arguments[1]; } });
+  if (!Hasher.instance) Hasher.instance = create_context({ 
+    define: function(key, value) { 
+			this[key] = value;
+		}
+  });
 
   if (namespace) {
     if (base && !Hasher.instance[base]) {

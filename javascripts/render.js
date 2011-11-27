@@ -3,7 +3,7 @@ with (Hasher()) {
     var arguments = flatten_to_array(arguments);
     var options = shift_options_from_args(arguments);
 
-    options.layout = options.layout || this.get_default_layout();
+    options.layout = options.layout || this.default_layout;
     options.target = options.target || document.body;
     if (options.layout) {
       var layout_element = options.layout(arguments);
@@ -39,9 +39,4 @@ with (Hasher()) {
     define(name, callback_wrapper);
   });
 
-  define('get_default_layout', function() { return null; });
-
-  define('set_default_layout', function(callback) {
-    define('get_default_layout', function() { return callback; }, this);
-  });
 }

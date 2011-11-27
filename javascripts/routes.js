@@ -20,12 +20,19 @@ with (Hasher()) {
   //     set_route(hash);
   //   }
  
-  // define a new route
+  // define a route
+  //   route('#', function() {})  or  route({ '#': function(){}, '#a': function(){} })
   define('route', function(path, callback) {
-    Hasher.routes.push({ 
-      regex: (new RegExp("^" + path.replace(/:[a-z_]+/g, '([^/]+)') + '$')),
-      callback: callback
-    });
+    if (typeof(path) == 'string') {
+      Hasher.routes.push({
+        regex: (new RegExp("^" + path.replace(/:[a-z_]+/g, '([^/]+)') + '$')),
+        callback: callback
+      });
+    } else {
+      for (var key in path) {
+        route(key, path[key]);
+      }
+    }
   });
 
   // return the current route as a string from browser bar
@@ -43,9 +50,9 @@ with (Hasher()) {
       var route = Hasher.routes[i];
       var matches = path.match(route.regex);
       if (matches) {
-        //Filters.run('before');
+        Filters.run('before');
         route.callback.apply(null, matches.slice(1));
-        //Filters.run('after');
+        Filters.run('after');
         return;
       }
     }

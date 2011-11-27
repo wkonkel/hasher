@@ -97,7 +97,7 @@ with (Hasher()) {
 
   // input types
   for_each(
-    'text', 'hidden', 'password', 'checkbox', 'radio',
+    'text', 'hidden', 'password', 'checkbox', 'radio', 'submit',
     function(input_type) {
       define(input_type, function() { 
         var arguments = flatten_to_array(arguments);
