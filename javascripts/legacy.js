@@ -2,7 +2,7 @@
 with (Hasher()) {
   Hasher.Controller = Hasher;
   Hasher.View = Hasher;
-	Hasher.Routes = { getHash: get_route };
+  Hasher.Routes = { getHash: get_route };
 
   define('create_layout', layout);
   define('redirect_to', set_route);
@@ -10,32 +10,32 @@ with (Hasher()) {
   define('create_action', function(name,callback) { this.define("action_" + name, callback); });
   define('action', function() {
     var that_arguments = arguments;
-		var that = this;
+    var that = this;
     return function() { 
-			if (that_arguments[0].indexOf('.') >= 0) {
-				var parts = that_arguments[0].split('.');
-				return that[parts[0]]['action_' + parts[1]].apply(that[parts[0]], Array.prototype.slice.call(that_arguments,1).concat(Array.prototype.slice.call(arguments,0)));
-			} else {
-				return that['action_' + that_arguments[0]].apply(that, Array.prototype.slice.call(that_arguments,1).concat(Array.prototype.slice.call(arguments,0)));
-			}
-		}
+      if (that_arguments[0].indexOf('.') >= 0) {
+        var parts = that_arguments[0].split('.');
+        return that[parts[0]]['action_' + parts[1]].apply(that[parts[0]], Array.prototype.slice.call(that_arguments,1).concat(Array.prototype.slice.call(arguments,0)));
+      } else {
+        return that['action_' + that_arguments[0]].apply(that, Array.prototype.slice.call(that_arguments,1).concat(Array.prototype.slice.call(arguments,0)));
+      }
+    }
   });
-	define('call_action', function() {
-		return action.apply(this,Array.prototype.slice.call(arguments))();
-	});
+  define('call_action', function() {
+    return action.apply(this,Array.prototype.slice.call(arguments))();
+  });
 
 
   define('create_helper', function(name,callback) { this.define("helper_" + name, callback); });
   define('helper', function() {
     var that_arguments = arguments;
-		var that = this;
+    var that = this;
 
-		if (that_arguments[0].indexOf('.') >= 0) {
-			var parts = that_arguments[0].split('.');
-			return that[parts[0]]['helper_' + parts[1]].apply(that[parts[0]], Array.prototype.slice.call(that_arguments,1));
-		} else {
-			return that['helper_' + that_arguments[0]].apply(that, Array.prototype.slice.call(that_arguments,1));
-		}
+    if (that_arguments[0].indexOf('.') >= 0) {
+      var parts = that_arguments[0].split('.');
+      return that[parts[0]]['helper_' + parts[1]].apply(that[parts[0]], Array.prototype.slice.call(that_arguments,1));
+    } else {
+      return that['helper_' + that_arguments[0]].apply(that, Array.prototype.slice.call(that_arguments,1));
+    }
   });
 
   define('create_view', function(name,callback) { this.define("view_" + name, callback); }); 
@@ -54,7 +54,7 @@ with (Hasher()) {
       for (var key in hash) {
         (function(key,hash) {
           real_route.call(that, key, function() {
-						var func = that['action_' + hash[key]] || function(){ this.render(this['view_' + hash[key]].call(this)); };
+            var func = that['action_' + hash[key]] || function(){ this.render(this['view_' + hash[key]].call(this)); };
             func.apply(that, flatten_to_array(arguments));
           });
         })(key, hash);
@@ -76,11 +76,11 @@ with (Hasher()) {
   (function() {
     var real_layout = layout;
     define('layout', function(name, callback) {
-			if (!callback) {
-				this.default_layout = this[name];
-			} else {
-				real_layout.apply(this, flatten_to_array(arguments));
-			}
+      if (!callback) {
+        this.default_layout = this[name];
+      } else {
+        real_layout.apply(this, flatten_to_array(arguments));
+      }
     });
   })();
 
