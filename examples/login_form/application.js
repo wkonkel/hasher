@@ -1,11 +1,11 @@
 with (Hasher('Application')) {
-	define('default_layout', function(yield) {
-		return div(
-			h1('Awesome Application'),
-			div({ style: "background: #eee; border: 1px solid #888; padding: 10px" }, yield),
-			p('Copyright 2000')
-		);
-	});
+  define('default_layout', function(yield) {
+    return div(
+      h1('Awesome Application'),
+      div({ style: "background: #eee; border: 1px solid #888; padding: 10px" }, yield),
+      p('Copyright 2000')
+    );
+  });
 }
 
 
