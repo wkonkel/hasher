@@ -26,11 +26,12 @@ with (Hasher()) {
     if (typeof(path) == 'string') {
       Hasher.routes.push({
         regex: (new RegExp("^" + path.replace(/:[a-z_]+/g, '([^/]+)') + '$')),
-        callback: callback
+        callback: callback,
+				context: this
       });
     } else {
       for (var key in path) {
-        route(key, path[key]);
+        this.route(key, path[key]);
       }
     }
   });
@@ -43,6 +44,12 @@ with (Hasher()) {
   });
 
   define('set_route', function(path, skip_updating_browser_bar) {
+		// if (Hasher.performing_action) {
+		// 	setTimeout(curry(set_route, path, skip_updating_browser_bar), 0);
+		// 	return;
+		// }
+		// Hasher.performing_action = true;
+
     if (!skip_updating_browser_bar) window.location.href = window.location.href.split('#')[0] + path;
     Hasher.current_route = path;
 
@@ -50,13 +57,41 @@ with (Hasher()) {
       var route = Hasher.routes[i];
       var matches = path.match(route.regex);
       if (matches) {
-        Filters.run('before');
-        route.callback.apply(null, matches.slice(1));
-        Filters.run('after');
+        route.context.run_filters('before');
+				//if (!Hasher.performed_action) {
+	        route.callback.apply(null, matches.slice(1));
+	        route.context.run_filters('after');
+				//}
         return;
       }
     }
 
     alert('404 not found: ' + path);
   });
+
+
+  define('before_filter', function(name, callback) {
+		if (!this.hasOwnProperty('before_filters')) this.before_filters = [];
+	  this.before_filters.push({ name: name, callback: callback });
+  });
+
+  define('after_filter', function(name, callback) {
+		if (!this.hasOwnProperty('after_filters')) this.after_filters = [];
+	  this.after_filters.push({ name: name, callback: callback });
+  });
+
+	define('run_filters', function(name) {
+		var filters = [];
+		var obj = this;
+		var that = this;
+		while (obj) {
+			if (obj.hasOwnProperty(name + '_filters')) filters = obj[name + '_filters'].concat(filters);
+			obj = obj.__proto__;
+		}
+		
+		for_each(filters, function(filter) {
+			filter.callback.call(that);
+			//if (Hasher.performed_action) return;
+		});
+	});
 }

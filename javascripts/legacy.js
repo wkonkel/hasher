@@ -1,9 +1,3 @@
-// - inheritable/appendable before filters
-// - default_layout + inheritable layouts
-// - layout()
-// - helper()
-
-
 // this file should be avoided if possible... this is a backwards compatibilty layer with 0.0.5
 with (Hasher()) {
   Hasher.Controller = Hasher;
@@ -59,7 +53,7 @@ with (Hasher()) {
       var that = this;
       for (var key in hash) {
         (function(key,hash) {
-          real_route(key, function() {
+          real_route.call(that, key, function() {
 						var func = that['action_' + hash[key]] || function(){ this.render(this['view_' + hash[key]].call(this)); };
             func.apply(that, flatten_to_array(arguments));
           });

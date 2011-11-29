@@ -22,9 +22,7 @@ DOM Templates:
 			);
 		});
 
-		document.body.appendChild(
-			hello_world('Why hello there!')
-		);
+		render(hello_world('Why hello there!'));
 	}
 
 

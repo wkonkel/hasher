@@ -21,6 +21,9 @@ with (Hasher('Application')) {
     console.log(data);
   });
 
+
+
+
   route('#forgot-password', function() {
     render(forgot_password_form());
   });
