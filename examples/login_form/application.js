@@ -1,12 +1,23 @@
 with (Hasher('Application')) {
+	define('default_layout', function(yield) {
+		return div(
+			h1('Awesome Application'),
+			div({ style: "background: #eee; border: 1px solid #888; padding: 10px" }, yield),
+			p('Copyright 2000')
+		);
+	});
+}
+
+
+with (Hasher('Login', 'Application')) {
   route('#', function() {
-    render(login_form());
+    render(render_form());
   });
 
-  define('login_form', function() {
+  define('render_form', function() {
     return div(
-      form({ action: login_form_submitted },
-        h1("Login"),
+      form({ action: process_form },
+        h2("Login"),
         text({ name: 'login', placeholder: 'Login' }),
         password({ name: 'password', placeholder: 'Password' }),
         button('Go'),
@@ -16,22 +27,22 @@ with (Hasher('Application')) {
     );
   });
 
-  define('login_form_submitted', function(data) {
-    alert('form_submitted');
+  define('process_form', function(data) {
+    alert('process login!');
     console.log(data);
   });
+}
 
 
-
-
+with (Hasher('ForgotPassword', 'Application')) {
   route('#forgot-password', function() {
-    render(forgot_password_form());
+    render(render_form());
   });
 
-  define('forgot_password_form', function() {
+  define('render_form', function() {
     return div(
-      form({ action: forgot_password_action },
-        h1('Forgot Password'),
+      form({ action: process_form },
+        h2('Forgot Password'),
         text({ name: 'email' }),
         button('Go'),
         ' or ',
@@ -40,8 +51,8 @@ with (Hasher('Application')) {
     );
   });
 
-  define('forgot_password_action', function(data) {
-    alert('forgot_password_action');
+  define('process_form', function(data) {
+    alert('process forgot password!');
     console.log(data);
   });
 }
