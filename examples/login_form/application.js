@@ -13,10 +13,10 @@ with (Hasher('Application')) {
 
 with (Hasher('Login', 'Application')) {
   route('#', function() {
-    render(render_form());
+    render(the_form());
   });
 
-  define('render_form', function() {
+  define('the_form', function() {
     return div(
       form({ action: process_form },
         h2("Login"),
@@ -38,10 +38,10 @@ with (Hasher('Login', 'Application')) {
 
 with (Hasher('ForgotPassword', 'Application')) {
   route('#forgot-password', function() {
-    render(render_form());
+    render(the_form());
   });
 
-  define('render_form', function() {
+  define('the_form', function() {
     return div(
       form({ action: process_form },
         h2('Forgot Password'),
