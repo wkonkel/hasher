@@ -2,12 +2,33 @@
 with (Hasher()) {
   Hasher.Controller = Hasher;
   Hasher.View = Hasher;
-  Hasher.Routes = { getHash: get_route };
+  Hasher.Routes = { getHash: get_route, setHash: set_route };
 
   define('create_layout', layout);
   define('redirect_to', set_route);
 
-  define('create_action', function(name,callback) { this.define("action_" + name, callback); });
+  // performed_action is used for the legacy "render default view if no render/redirect_to"
+  redefine('render', function(callback) {
+    Hasher.performed_action = true;
+    callback.apply(this, Array.prototype.slice.call(arguments,1));
+  });
+  redefine('set_route', function(callback) {
+    Hasher.performed_action = true;
+    callback.apply(this, Array.prototype.slice.call(arguments,1));
+  });
+  define('create_action', function(name,callback) { 
+    var that = this;
+    this.define("action_" + name, function() {
+      Hasher.performed_action = false;
+      callback.apply(that, Array.prototype.slice.call(arguments));
+      if (!Hasher.performed_action) {
+        if (that['view_' + name]) that.render(that['view_' + name].call(this));
+      }
+      delete Hasher.performed_action;
+    });
+  });
+  
+  
   define('action', function() {
     var that_arguments = arguments;
     var that = this;
@@ -72,6 +93,21 @@ with (Hasher()) {
       }
     });
   })();
+
+  // add in legacy events hash
+  redefine('element', function(callback) {
+    var arguments = Array.prototype.slice.call(arguments,1);
+    var tag = arguments.shift();
+    var options = shift_options_from_args(arguments);
+    if (options.events) {
+      var events = options.events;
+      delete options.events;
+      for (var k in events) {
+        options['on' + k] = events[k];
+      }
+    }
+    return callback.call(this, tag, options, arguments);
+  });
 
   (function() {
     var real_layout = layout;

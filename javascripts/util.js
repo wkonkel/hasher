@@ -1,4 +1,11 @@
 with (Hasher()) {
+  define('redefine', function(name, callback) {
+    var real_callback = this[name];
+    define(name, function() {
+      return callback.apply(this, [real_callback].concat(Array.prototype.slice.call(arguments)));
+    });
+  });
+
   define('stop_event', function(e) {
     if (!e) return;
     if (e.preventDefault) e.preventDefault();
@@ -48,5 +55,5 @@ with (Hasher()) {
     return (function() {
       real_args.shift().apply(null, Array.prototype.concat.apply(real_args, arguments));
     });
-  });
+  });  
 }
