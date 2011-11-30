@@ -37,20 +37,22 @@ var Hasher = function(namespace, base) {
     return obj;
   }
 
-  if (!Hasher.instance) Hasher.instance = create_context({ 
-    define: function(key, value) { 
-      this[key] = value;
-    }
-  });
+  if (!Hasher.contexts) Hasher.contexts = {
+    Base: create_context({ 
+      define: function(key, value) { 
+        this[key] = value;
+      }
+    })
+  };
 
   if (namespace) {
-    if (base && !Hasher.instance[base]) {
+    if (base && !Hasher.contexts[base]) {
       alert('Invalid Hasher parent: ' + base);
     } else {
-      if (!Hasher.instance[namespace]) Hasher.instance[namespace] = create_context(base ? Hasher.instance[base] : Hasher.instance);
-      return Hasher.instance[namespace];
+      if (!Hasher.contexts[namespace]) Hasher.contexts[namespace] = create_context(base ? Hasher.contexts[base] : Hasher.contexts.Base);
+      return Hasher.contexts[namespace];
     }
   } else {
-    return Hasher.instance;
+    return Hasher.contexts.Base;
   }
 };

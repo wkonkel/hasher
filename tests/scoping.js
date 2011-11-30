@@ -19,8 +19,6 @@ with (Hasher('Test')) {
     with (Hasher('SomeClass')) {
       assert_not_equal(typeof(super_duper_secret_thing), 'undefined');
     }
-    
-    delete Hasher.instance.SomeClass;
   });
 
 
