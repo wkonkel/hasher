@@ -31,7 +31,6 @@ var Hasher = function(namespace, base) {
   var create_context = function(proto) {
     function Context() {};
     Context.prototype = proto;
-    Context.prototype
     var obj = new Context();
     if (!obj.__proto__) obj.__proto__ = proto;
     return obj;
