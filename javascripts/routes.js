@@ -11,15 +11,6 @@ with (Hasher()) {
     callback();
   });
  
-  // TODO: add a handler to document.body that intercepts clicks on <a href="#..."> tags
-  // if (options.href && options.href.indexOf('#') == 0) {
-  //   var hash = options.href;
-  //   options.href = '';
-  //   options.onClick = function(e) {
-  //     stop_event(e);
-  //     set_route(hash);
-  //   }
- 
   // define a route
   //   route('#', function() {})  or  route({ '#': function(){}, '#a': function(){} })
   define('route', function(path, callback) {
