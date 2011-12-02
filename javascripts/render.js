@@ -3,7 +3,7 @@ with (Hasher()) {
     var arguments = flatten_to_array(arguments);
     var options = shift_options_from_args(arguments);
 
-    options.layout = options.layout || this.default_layout;
+    options.layout = typeof(options.layout) == 'undefined' ? this.default_layout : options.layout;
     options.target = options.target || document.body;
     if (options.layout) {
       var layout_element = options.layout(arguments);
@@ -14,13 +14,13 @@ with (Hasher()) {
     } else {
       options.target.innerHTML = '';
       for (var i=0; i < arguments.length; i++) {
-        options.target.appendChild(arguments[i]);
+        options.target.appendChild(typeof(arguments[i]) == 'string' ? document.createTextNode(arguments[i]) : arguments[i]);
       }
     }
   });
 
   define('layout', function(name, callback) {
-    function callback_wrapper(yield) {
+    define(name, function callback_wrapper(yield) {
       // NOTE: this approach might be sketchy... we're storing state in the function object itself
       if (!callback_wrapper.layout_elem) {
         var tmp_div = div();
@@ -31,12 +31,10 @@ with (Hasher()) {
       // replace contents and add content
       callback_wrapper.yield_parent.innerHTML='';
       yield = flatten_to_array(yield);
-      for (var i=0; i < yield.length; i++) callback_wrapper.yield_parent.appendChild(yield[i]);
+      for (var i=0; i < yield.length; i++) callback_wrapper.yield_parent.appendChild((typeof(yield[i]) == 'string') ? document.createTextNode(yield[i]) : yield[i]);
       
       return callback_wrapper.layout_elem;
-    }
-
-    define(name, callback_wrapper);
+    });
   });
 
 }

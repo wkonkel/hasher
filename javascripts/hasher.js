@@ -24,9 +24,6 @@
  *                                                                                *
  **********************************************************************************/
 
-// "There is nothing you can do with a with statement that you can't do as well without one." 
-//   --Douglas Crockford  http://www.youtube.com/watch?v=taaEzHI9xyY
-
 var Hasher = function(namespace, base) {
   var create_context = function(proto) {
     function Context() {};

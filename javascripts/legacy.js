@@ -7,25 +7,8 @@ with (Hasher()) {
   define('create_layout', layout);
   define('redirect_to', set_route);
 
-  // performed_action is used for the legacy "render default view if no render/redirect_to"
-  redefine('render', function(callback) {
-    Hasher.performed_action = true;
-    callback.apply(this, Array.prototype.slice.call(arguments,1));
-  });
-  redefine('set_route', function(callback) {
-    Hasher.performed_action = true;
-    callback.apply(this, Array.prototype.slice.call(arguments,1));
-  });
   define('create_action', function(name,callback) { 
-    var that = this;
-    this.define("action_" + name, function() {
-      Hasher.performed_action = false;
-      callback.apply(that, Array.prototype.slice.call(arguments));
-      if (!Hasher.performed_action) {
-        if (that['view_' + name]) that.render(that['view_' + name].call(this));
-      }
-      delete Hasher.performed_action;
-    });
+    this.define("action_" + name, callback);
   });
   
   
@@ -68,15 +51,39 @@ with (Hasher()) {
     return this[options.type || 'text'](options, arguments);
   });
   
+  
+  
+  // performed_action is used for the legacy "render default view if no render/redirect_to"
+  redefine('render', function(callback) {
+    Hasher.performed_action = true;
+    callback.apply(this, Array.prototype.slice.call(arguments,1));
+  });
+
+  redefine('set_route', function(callback) {
+    Hasher.performed_action = true;
+    callback.apply(this, Array.prototype.slice.call(arguments,1));
+  });
+  
   (function() {
     var real_route = route;
     define('route', function(hash) {
+      if (typeof(hash) == 'string') return real_route.apply(this, Array.prototype.slice.call(arguments));
+
       var that = this;
       for (var key in hash) {
         (function(key,hash) {
           real_route.call(that, key, function() {
-            var func = that['action_' + hash[key]] || function(){ this.render(this['view_' + hash[key]].call(this)); };
-            func.apply(that, flatten_to_array(arguments));
+            // run callback
+            Hasher.performed_action = false;
+            var callback = that['action_' + hash[key]] || function(){};
+            callback.apply(that, Array.prototype.slice.call(arguments));
+
+            // render default action
+            if (!Hasher.performed_action && that['view_' + hash[key]]) {
+              that.render(that['view_' + hash[key]].call(this));
+            }
+            
+            delete Hasher.performed_action;
           });
         })(key, hash);
       }

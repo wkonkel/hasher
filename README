@@ -1,5 +1,13 @@
 Hasher.js -- A client-side view-controller framework for JavaScript
 
+SIMPLEST:
+
+with (Hasher()) {
+  render('Hello World.');
+}
+
+
+
 DOM Element Generation:
 
 	with (Hasher()) {
