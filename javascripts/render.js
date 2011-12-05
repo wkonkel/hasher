@@ -3,7 +3,7 @@ with (Hasher()) {
     var arguments = flatten_to_array(arguments);
     var options = shift_options_from_args(arguments);
 
-    options.layout = typeof(options.layout) == 'undefined' ? this.default_layout : options.layout;
+    options.layout = typeof(options.layout) == 'undefined' ? (options.target ? false : this.default_layout) : options.layout;
     options.target = options.target || document.body;
     if (options.layout) {
       var layout_element = options.layout(arguments);

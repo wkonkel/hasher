@@ -50,10 +50,10 @@ with (Hasher()) {
     for (var i=0; i < objs.length; i++) callback(objs[i]);
   });
   
-  define('curry', function() {
-    var real_args = Array.prototype.slice.call(arguments);
+  define('curry', function(callback) {
+    var curried_args = Array.prototype.slice.call(arguments,1);
     return (function() {
-      real_args.shift().apply(null, Array.prototype.concat.apply(real_args, arguments));
+      callback.apply(null, Array.prototype.concat.apply(curried_args, arguments));
     });
   });  
 }
